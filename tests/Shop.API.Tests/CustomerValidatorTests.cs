@@ -17,6 +17,11 @@ namespace Shop.API.Tests
     {
         private readonly CustomerValidator _sut = new CustomerValidator();
 
+        /// <summary>
+        /// This test does the initial approach I showed in the post. 
+        /// We need to get each field "manually". See the test below for a better
+        /// way to handle same rules for different properties
+        /// </summary>
         [Fact]
         public void ForenameRule_ShouldMatchEFModelConfiguration()
         {
@@ -30,7 +35,8 @@ namespace Shop.API.Tests
                 .GetValidatorsForMember(t => t.Forename).OfType<NotEmptyValidator>().FirstOrDefault();
 
             // Get the EF EntityTypeBuilder<T> for our Customer entity
-            var entityTypeBuilder = GetCustomerEntityConfigurationMetadata();
+            var entityTypeBuilder = TestExtensions
+                .GetEntityTypeBuilder<Customer, CustomerEntityTypeConfiguration>();
 
             var foreNameDbProperty = entityTypeBuilder.Metadata.FindDeclaredProperty(nameof(Customer.Forename));
 
@@ -47,6 +53,7 @@ namespace Shop.API.Tests
         [Fact]
         public void Validator_MaxLengthRules_ShouldHaveSameLengthAsEfEntity()
         {
+            // We want to test all length of these fields
             var propertiesToValidate = new string[]
             {
                 nameof(Customer.Surname),
@@ -54,7 +61,7 @@ namespace Shop.API.Tests
                 nameof(Customer.Address),
             };
 
-            var entityBuilder = TestExtensions
+            var entityTypeBuilder = TestExtensions
                 .GetEntityTypeBuilder<Customer, CustomerEntityTypeConfiguration>();
 
             // Get the validators for the fields above
@@ -64,7 +71,7 @@ namespace Shop.API.Tests
 
             // Get the database metadata for each field as configured in EF Core
             Dictionary<string, IMutableProperty> expectedDbProperties = propertiesToValidate
-                .Select(p => new { Key = p, FieldMetadata = entityBuilder.Metadata.FindDeclaredProperty(p) })
+                .Select(p => new { Key = p, FieldMetadata = entityTypeBuilder.Metadata.FindDeclaredProperty(p) })
                 .ToDictionary(key => key.Key, value => value.FieldMetadata);
 
             foreach (var propValidator in validatorsDict)
@@ -75,31 +82,6 @@ namespace Shop.API.Tests
                 // Validator Length and Db should have the same values
                 Assert.Equal(expectedDbMetadata.GetMaxLength(), propValidator.Value.Max);
             }
-        }
-
-        private EntityTypeBuilder<Customer> GetCustomerEntityConfigurationMetadata()
-        {
-            // Construct the optionsBuilder using InMemory SqlLite
-            var options = new DbContextOptionsBuilder<ShopDbContext>()
-                    .UseSqlite(new SqliteConnection("DataSource=:memory:"))
-                    .Options;
-
-            var sut = new ShopDbContext(options);
-
-            // Get the convention set for this db
-            var conventionSet = ConventionSet.CreateConventionSet(sut);
-
-            // Now create the ModelBuilder
-            var modelBuilder = new ModelBuilder(conventionSet);
-
-            // Get the EntityTypeBuilder for Customer
-            var entityTypeBuilder = modelBuilder.Entity<Customer>();
-
-            // Apply the EntityConfiguration to our entityTypeBuilder
-            var customerEntityConfiguration = new CustomerEntityTypeConfiguration();
-            customerEntityConfiguration.Configure(entityTypeBuilder);
-
-            return entityTypeBuilder;
         }
     }
 }
