@@ -62,7 +62,7 @@ This repo contain a simple ASP.NET Core API which uses EF Core + Fluent Validati
 
 # Requirements
 
-- .NET Core 3.1.x
+- .NET Core 7.0
 
 
 
