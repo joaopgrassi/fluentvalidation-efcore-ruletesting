@@ -27,14 +27,20 @@ namespace Shop.API.Tests
 			var descriptor = validator.CreateDescriptor();
 			var expressionMemberName = expression.GetMember()?.Name;
 
-			return descriptor.GetValidatorsForMember(expressionMemberName).ToArray();
+			return descriptor.GetValidatorsForMember(expressionMemberName).Select(x => x.Validator).ToArray();
 		}
 
-		public static IPropertyValidator[] GetValidatorsForMember<T>(
+        /// <summary>
+        /// Returns all the <see cref="IPropertyValidator"/> of a given field
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="validator"></param>
+        /// <param name="memberName"></param>
+        public static IPropertyValidator[] GetValidatorsForMember<T>(
 			this IValidator<T> validator, string memberName)
 		{
 			var descriptor = validator.CreateDescriptor();
-			return descriptor.GetValidatorsForMember(memberName).ToArray();
+			return descriptor.GetValidatorsForMember(memberName).Select(x => x.Validator).ToArray();
 		}
 
 		/// <summary>
